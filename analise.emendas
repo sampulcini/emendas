@@ -1,0 +1,142 @@
+# O intuito dessa analise é identificar se existe um aumento de Repasses aos Municipios de Emendas Parlamentares em período eleitoral mun
+
+import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+# Carregar arquivo csv do Dicionario
+dicionario = pd.concat(
+    [pd.read_csv(file, encoding='latin1', delimiter=';', on_bad_lines='skip') for file in ['dicionario.csv']],
+    ignore_index=True
+)
+
+dicionario.head(16)
+
+import pandas as pd
+
+# Carregar arquivo csv das Emendas de 2014 até 2024 Setembro com low_memory=False
+emendas = pd.concat(
+    [pd.read_csv(file, encoding='latin1', delimiter=';', on_bad_lines='skip', low_memory=False) for file in ['Emendas.csv']],
+    ignore_index=True
+)
+
+# Renomear as colunas para letras minúsculas
+emendas.columns = emendas.columns.str.lower()
+
+# Dicionário para renomear as colunas
+dicionario_renomeacao = {
+    'ano da emenda': 'ano',
+    'tipo de emenda': 'tipo',
+    'autor da emenda': 'autor',
+    'número da emenda': 'numero',
+    'localidade do gasto': 'localidade_gasto',
+    'código função': 'codigo_funcao',
+    'nome função': 'nome_funcao',
+    'código subfunção': 'codigo_subfuncao',
+    'nome subfunção': 'nome_subfuncao',
+    'valor empenhado': 'valor_empenhado',
+    'valor liquidado': 'valor_liquidado',
+    'valor pago': 'valor_pago',
+    'valor restos a pagar inscritos': 'restos_a_pagar_inscritos',
+    'valor restos a pagar cancelados': 'restos_a_pagar_cancelados',
+    'valor restos a pagar pagos': 'restos_a_pagar_pagos'
+}
+
+# Renomeando as colunas
+emendas.rename(columns=dicionario_renomeacao, inplace=True)
+
+# Tratando dados para fazer a filtragem por estados
+
+# Extrair o estado dos últimos 2 caracteres do texto da coluna localidade_gasto
+emendas['estado_destino'] = emendas['localidade_gasto'].str.extract(r'(\w{2})$') 
+emendas['localidade_gasto'].fillna('', inplace=True)  # Substituir nulos por string vazia
+
+# Filtrando e tratando informações que não queremos utilziar
+emendas_filtradas = emendas[~emendas['localidade_gasto'].str.contains('Nacional', case=False)]
+entradas_invalidas = ['nacional', 'ul', 'or', 'te', 'nordeste', 'centro-oeste', 'sudeste', 'sul', 'exterior', 'norte', 'múltiplo']
+emendas_filtradas = emendas_filtradas[~emendas_filtradas['localidade_gasto'].str.contains('|'.join(entradas_invalidas), case=False)]
+
+# Agrupar por ano e estado e contar o número de emendas
+contagem_emendas = emendas_filtradas.groupby(['ano', 'estado_destino']).size().reset_index(name='quantidade_emendas')
+quantidade_total_por_estado = contagem_emendas.groupby('estado_destino')['quantidade_emendas'].sum().reset_index()
+quantidade_total_por_estado = quantidade_total_por_estado.sort_values(by='quantidade_emendas', ascending=False)
+
+quantidade_total_por_estado.head(30) 
+
+
+# Criando gráfico de para facilitar a visualização da relação de Relevancia de cada Estado
+
+# Criar gráfico de Participação de Emendas por Estado
+plt.figure(figsize=(10, 8))
+explode = [0.13] * len(quantidade_total_por_estado)  # Separação das fatias
+plt.pie(quantidade_total_por_estado['quantidade_emendas'], 
+        labels=quantidade_total_por_estado['estado_destino'], 
+        autopct='%1.1f%%', 
+        startangle=100,
+        explode=explode,  
+        pctdistance=0.85)  
+
+plt.title('Participação de Emendas por Estado (2014-2024)', pad=20)
+plt.axis('equal')  # Para manter o gráfico circular
+plt.tight_layout()
+plt.show()
+
+
+# Gráficos de 2014 até 2024 por Estado
+
+# Filtrar dados para o período de 2014 a 2016
+dados_2014_2016 = contagem_emendas[(contagem_emendas['ano'] >= 2014) & (contagem_emendas['ano'] <= 2016)]
+
+# Plotar gráfico de barras para o período de 2014 a 2016
+plt.figure(figsize=(15, 8))
+sns.barplot(data=dados_2014_2016, x='estado_destino', y='quantidade_emendas', hue='ano')
+
+plt.title('Quantidade de Emendas por Estado (2014-2016)')
+plt.xlabel('Estado')
+plt.ylabel('Quantidade de Emendas')
+plt.xticks(rotation=45)
+plt.legend(title='Ano')
+plt.show()
+
+# Gráfico para o período de 2017 a 2020
+emendas_2017_2020 = contagem_emendas[(contagem_emendas['ano'] >= 2017) & (contagem_emendas['ano'] <= 2020)]
+
+plt.figure(figsize=(15, 8))
+sns.barplot(data=emendas_2017_2020, x='estado_destino', y='quantidade_emendas', hue='ano', palette='viridis')
+plt.title('Quantidade de Emendas por Estado - Período 2017 a 2020')
+plt.xlabel('Estado')
+plt.ylabel('Quantidade de Emendas')
+plt.legend(title='Ano')
+plt.xticks(rotation=45)
+plt.show()
+
+# Gráfico para o período de 2021 a 2024
+emendas_2021_2024 = contagem_emendas[(contagem_emendas['ano'] >= 2021) & (contagem_emendas['ano'] <= 2024)]
+
+plt.figure(figsize=(15, 8))
+sns.barplot(data=emendas_2021_2024, x='estado_destino', y='quantidade_emendas', hue='ano', palette='magma')
+plt.title('Quantidade de Emendas por Estado - Período 2021 a 2024')
+plt.xlabel('Estado')
+plt.ylabel('Quantidade de Emendas')
+plt.legend(title='Ano')
+plt.xticks(rotation=45)
+plt.show()
+
+# Gráfico final 
+
+# Criando gráfico final
+quantidade_emendas_por_ano = emendas.groupby('ano').size().reset_index(name='quantidade_emendas')
+plt.figure(figsize=(15, 8))
+sns.lineplot(data=quantidade_emendas_por_ano, x='ano', y='quantidade_emendas', marker='o')
+
+# Demarcadores visuais para os anos eleitorais
+anos_eleitorais = [2014, 2018, 2022]
+for ano in anos_eleitorais:
+    plt.axvline(x=ano, color='red', linestyle='--', linewidth=1)
+
+plt.title('Quantidade Total de Emendas por Ano (Incluindo "Entradas Inválidas")')
+plt.xlabel('Ano')
+plt.ylabel('Quantidade de Emendas')
+plt.xticks(range(2014, 2025), rotation=45)
+plt.tight_layout()
+plt.show()
