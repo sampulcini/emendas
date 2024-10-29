@@ -1,4 +1,4 @@
-# O intuito dessa analise é identificar se existe um aumento de Repasses aos Municipios de Emendas Parlamentares em período eleitoral mun
+# O intuito dessa analise é identificar se existe um aumento de Repasses aos Municipios de Emendas Parlamentares em período eleitoral
 
 import pandas as pd
 import seaborn as sns
